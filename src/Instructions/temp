@@ -1,0 +1,63 @@
+  updateCrm(profileId){
+    this.crmRef.current.ContentWindow.postMessage(
+      {id: profileId},
+      "https://duckycrm-7409-dev.twil.io"
+    );
+  }
+
+  init(flex, manager) {
+    flex.MainHeader.defaultProps.logoUrl =
+      "https://image.flaticon.com/icons/png/512/4402/4402039.png";
+
+    manager.updateConfig({ colorTheme: SashaTheme });
+
+    flex.NoTasksCanvas.Content.remove("first-line");
+    flex.NoTasksCanvas.Content.remove("second-line");
+    flex.NoTasksCanvas.Content.remove("hint");
+
+    flex.NoTasksCanvas.Content.add(<HowIsSasha key="how-is-sasha" />, {
+      sortOrder: -1,
+    });
+
+    if(window.self !== window.top){
+      flex.AgentDesktopView.defaultProps.showPanel2 = false;
+
+      window.addEventListener('message', receiveMessage, false);
+
+      flex.Actions.addListener('afterSelectTask', (payload) => {
+        if(payload.task && payload.task.attributes){
+          window.top.postMessage(payload.task.attributes);
+        }
+      })
+    }
+
+    manager.strings.TaskHeaderLine =
+      "{{task.attributes.account_data.first_name}} " +
+      "{{task.attributes.account_data.last_name}}";
+    manager.strings.TaskLineCallReserved =
+      "SLA: {{task.attributes.account_data.service_level}}";
+
+    flex.AgentDesktopView.Panel2.Content.remove("container"); //remove default CRM flex Container
+
+    //and lets add our own!
+    flex.AgentDesktopView.Panel2.Content.add(
+      <iframe
+        key="crmIframe"
+        ref={this.crmRef}
+        src="https://duckycrm-7409-dev.twil.io/spa.html"
+        style={{ height: "100vh" }}
+      ></iframe>
+    );
+
+    //lets post a message whenever we select a task
+    flex.Actions.addListener("beforeSelectTask", (payload) => {
+      if (
+        payload.task &&
+        payload.task.attributes &&
+        payload.task.attributes.account_number
+      ) {
+        this.updateCrm(payload.task.attributes.account_number);
+      } else {
+        this.updateCrm(null);
+      }
+    });

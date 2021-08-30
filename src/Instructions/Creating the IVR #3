@@ -1,0 +1,121 @@
+#This one is pretty straightforward, We head to the console and edit our IVR tree. You can do the default IVR to
+start.
+
+since it's pretty simple to hook up, im going to list a coupe problems a ran into:
+
+1. Make sure to check your voice recognition settings. Put the voice hints in the hints section section
+so twilio can correctly parse your commands. DO NOT use equals to in their either. I used the keyword 'Contains' to
+make it work.
+
+2. Save your gather inputs as variables in the 'Send to Agent' function. You always start off with the variable name:
+
+"account_number" : "{{widgets.GetAccountNumber.Digits}}  ",
+"account_data" : {{widgets.PullAccountInfo.parsed.profile|to_json}}
+
+notice how we get the JSON data from account_data, parse it, and put it through to a JSON filter. '|to_json'
+
+also, be cognizant of where you're getting you information. notice how the two pieces of information are from different 
+points in the call. Keep track, or it WILL cause bugs in your call tree.
+
+that should be about it. check the documentation if you run into any other issues. Usually it's just tiny things like
+spelling or variable naming errors
+
+
+-------------------------------------------------
+Getting the data to show up in the task list
+-------------------------------------------------
+
+inside of our init(flex, manger) function, we added this code:
+
+    manager.strings.TaskHeaderLine =
+      "{{task.attributes.account_data.first_name}} " +
+      "{{task.attributes.account_data.last_name}}";
+    manager.strings.TaskLineCallReserved =
+      "SLA: {{task.attributes.account_data.service_level}}";
+
+      //here, we're basically taking strings that's already specified by flex and replacing it with the information
+      we collected before. We can find the default strings with this command in the console 
+
+    Twilio.Flex.Manager.getInstance().strings;
+
+    //this will give you an idea of the strings you can manipulate;
+
+    //Give twilio a call again and the info should show up. that's if your variable names are correct. debug accordingly
+
+
+    ------------------------------------------------
+    Getting the profile to show in the CRM Container
+    ------------------------------------------------
+
+    In the same 'init' function, we add the folowing code. This is a method called uricallback. Not a great way 
+    to display info or connect a CRM, but its a start. 
+
+    const crmUrl = "https://duckycrm-7409-dev.twil.io";
+
+       flex.CRMContainer.defaultProps.uriCallback = (task) => {
+      if (task) {
+        return `${crmUrl}/profile?id=` + task.attributes.account_number;
+      } else {
+        return `${crmUrl}/index`;
+      }
+    };
+
+    //this code checks if there is a task and if there is, it makes a call to the 
+    crmUrl with the parameters of the saved info. if not, we're just going to show the default page.
+
+    //So on a greater understanding of the arrow function, we're basically applying a value
+    to the element CRMContainer through a consitional. Good to know about utilizing arrow functions
+
+    //If you call twilio again, and click on the task, it should show the information pulled from our CRM
+
+
+    ------------------------------
+    Using the postMessage() method
+    ------------------------------
+
+    //the postMessage method is a much better way to handle multiple tasks and display CRM data,
+    //we add the following variable after our super(props):
+
+    this.crmRef = React.createRef();
+
+    .this refers to any object, and will use this later on in our code.
+
+    to make things a little easier, we're going to write a helper function to update our CRM, like so:
+
+      updateCrm(profileId){
+    this.crmRef.current.ContentWindow.postMessage(
+      {id: profileId},
+      "https://duckycrm-7409-dev.twil.io"
+    );
+  }
+
+  //this code takes the profile id collected and makes a request to the CRM with the specified id parameter.
+
+  //Then we add this code. This can pretty much be done with any aspect of the flex view
+
+   flex.AgentDesktopView.Panel2.Content.remove("container"); //remove default CRM flex Container
+
+    //and lets add our own!
+    flex.AgentDesktopView.Panel2.Content.add(
+      <iframe
+        key="crmIframe"
+        ref={this.crmRef}
+        src="https://duckycrm-7409-dev.twil.io/spa.html"
+        style={{ height: "100vh" }}
+      ></iframe>
+    );
+
+    //lets post a message whenever we select a task
+    flex.Actions.addListener("beforeSelectTask", (payload) => {
+      if (
+        payload.task &&
+        payload.task.attributes &&
+        payload.task.attributes.account_number
+      ) {
+        this.updateCrm(payload.task.attributes.account_number);
+      } else {
+        this.updateCrm(null);
+      }
+    });
+
+

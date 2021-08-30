@@ -1,0 +1,19 @@
+to delete items off of our No Task canvas (This is the content that displays when there are no tasks left for the agent to do), we want to use the NoTasksCanvas.Content parent with
+the .remove() function. Now we just need to add the key within remove() to remove the element. For example:
+
+flex.NoTasksCanvas.Content.remove('first-line');
+
+i did for keys 'hint', and 'second-line'
+
+# Now we talk about styling components with 'withTheme()'; basically this is the way that we can access the theme within flex
+
+so when create a component, we can get it to assimilate with our current theme in your theme config.
+
+for the sake of this example, we're going to create a new file in components folder and make our component. 
+
+//Note: I just ended up styling custom componenets with semantic CSS and a custom Style Sheet.
+//kept getting a CORS error when trying to reference the emotion stylesheet.
+//persisted even when i impoorted cors and used express middleware
+
+That being said. It should be okay to use your own custom CSS framework. emotion did this weird migration thing,
+so im going to take the time to debug later. For now, I just used semantic.

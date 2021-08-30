@@ -1,0 +1,104 @@
+so instead of embedding our crm with iframes into an html element, we're going to use custom react components and render information
+dynamically.
+
+within the Fx4 plugin, we have the following files:
+
+# src/
+FeathercorpFx4Plugin.js      # main plugin file
+FeatherCorpTheme.js          # plugin color theme
+
+# src/components/CustomCRM
+Common.Styles.js             # styling of shared components
+CustomCRM.js                 # main CRM component file
+CustomCRM.Styles.js          # styling of the CRM component
+SecurityQuestions.jsx        # (ignore for now)
+SecurityQuestions.Styles.js  # (ignore for now)
+
+//For some reason, 'react-emotion' doesnt through the migration error in this exercise, but we'll roll with into
+// we have the follwing code in our plugin file 
+
+init(flex, manager) {
+  // set logo
+  flex.MainHeader.defaultProps.logoUrl =
+    'https://tangerine-toad-5117.twil.io/assets/feathercorp-logo-white.svg';
+  // set color theme
+  manager.updateConfig({ colorTheme: FeatherTheme });
+  // update task list with customer details
+  manager.strings.TaskHeaderLine =
+    '{{task.attributes.account_data.first_name}} ' +
+    '{{task.attributes.account_data.last_name}}';
+  manager.strings.TaskLineCallReserved =
+    'SLA: {{task.attributes.account_data.service_level}}';
+  // remove CRM container
+  flex.AgentDesktopView.Panel2.Content.remove('container');
+  // and replace it with our new component
+  flex.AgentDesktopView.Panel2.Content.add(<CustomCRM key="custom_crm" />);
+}
+
+it's just like our regular plugin file;
+
+// we put the following code in our customCrm.js file
+// build visual representation of the customer profile data
+let profileDetails;
+if (task && task.attributes && task.attributes.account_data) {
+  profileDetails = (
+    <ProfileGrid>
+      <div>
+        <Label>Address</Label>
+        <Value>
+          {task.attributes.account_data.address}
+          <br />
+          {task.attributes.account_data.city}, 
+          {task.attributes.account_data.state}, 
+          {task.attributes.account_data.zip}
+        </Value>
+      </div>
+      <div>
+        <Label>Date of Birth</Label>
+        <Value>{task.attributes.account_data.birthday}</Value>
+      </div>
+    </ProfileGrid>
+  );
+}
+
+In our flex console, we want to right a proxy server that sets the headers, first we have to create a service 
+to create the function. The code looks like this. Might be good to keep around for development
+
+const fetch = require('node-fetch');
+const crmUrl = 'https://storkcrm-3329-dev.twil.io';
+exports.handler = function (context, event, callback) {
+  let response = new Twilio.Response();
+  if (isNaN(event.id)) {
+    response.setBody(`Missing 'id' parameter.`);
+    response.setStatusCode(400);
+    return callback(null, response);
+  }
+  // '*' allows being called from any origin, this not the best security
+  // practice and should only be used for testing; when builiding
+  // a production plugin you should set the allowed origin to
+  // 'https://flex.twilio.com' (or any custom domain serving the plugin)
+  response.appendHeader('Access-Control-Allow-Origin', '*');
+  response.appendHeader('Access-Control-Allow-Methods', 'OPTIONS GET');
+  response.appendHeader('Access-Control-Allow-Headers', 'Content-Type');
+  fetch(`${crmUrl}/json?content=sq&id=${event.id}`)
+    .then((data) => data.json())
+    .then((data) => {
+      response.appendHeader('Content-Type', 'application/json');
+      response.setBody(data);
+      return callback(null, response);
+    })
+    .catch((err) => {
+      console.error('Fetch failed: ', err);
+      response.setBody('Fetch failed');
+      response.setStatusCode(500);
+      return callback(null, response);
+    });
+};
+
+
+//Basically all this code does is set the headers to allow cross origin requests, checks the data, and if the 
+request is okay, returns it as a JSON object.
+
+Please refer to SecurityQuestions.jsx to see how the proxy url is implemented in making the request
+
+NOTE: Please make sure to add Node-fetch as a dependency (or any other module that's missing for that matter!).

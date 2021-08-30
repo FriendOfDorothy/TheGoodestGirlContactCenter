@@ -1,0 +1,17 @@
+importing a CRM is pretty straightforward. the easiest way to do it would be to jst clone the demo, and takes
+the parts you need to import it into your CRM. you can study the code from there. here are the folloeing commands
+for your terminal 
+
+git clone https://github.com/TwilioTraining/plugin-feathercorp-fx3-crm-frame.git
+
+//clone the repository
+
+cd plugin-feathercorp-fx3-crm-frame/
+npm install
+twilio flex:plugins:start
+
+//this'll start your plugin for local development. Take the code from your example and put it into your project
+
+
+In the next one, we're going ot look at more complicated means of embedding CRMs into our flex app
+

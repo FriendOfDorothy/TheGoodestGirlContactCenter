@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>The Goodest Girl</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="//fonts.googleapis.com/css?family=Open+Sans"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Just+Another+Hand&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato:wght@300&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <script type="text/javascript">
+      window.onload = function () {
+        var crmBaseUrl = "https://duckycrm-7409-dev.twil.io";
+
+        // get references to the phone number and dial button elements
+        var btnDial = document.getElementById("dial-number");
+        var txtNumber = document.getElementById("phone-number");
+
+        // get the window object of the Flex iframe
+        var flexRef = document.getElementById("flex").contentWindow;
+
+        // use postMessage to send the phone number to the Flex iframe
+        function sendMessage(event) {
+          event.preventDefault();
+          flexRef.postMessage(txtNumber.value);
+        }
+
+        // bind sendMessage to click event from the dial number button
+        btnDial.addEventListener("click", sendMessage);
+        // similarly bind sendMessage to Enter keypress from the phone number
+        txtNumber.addEventListener("keyup", function (event) {
+          if (event.keyCode === 13) {
+            sendMessage(event);
+          }
+        });
+
+        // bind receiveMessage to incoming postMessage events
+        window.addEventListener("message", receiveMessage, false);
+
+        // render customer profile when a task is selected in Flex
+        function receiveMessage(event) {
+          console.log("Received event data: ", event.data);
+          if (event.data.account_data) {
+            var profileContainer = document.querySelector("#profile-container");
+            var profileName = profileContainer.querySelector("#name");
+            var profileImg = profileContainer.querySelector("#img");
+            profileName.textContent =
+              event.data.account_data.first_name +
+              " " +
+              event.data.account_data.last_name;
+            profileImg.src = crmBaseUrl + event.data.account_data.img_src;
+          }
+        }
+      };
+    </script>
+  </head>
+
+  <body>
+    <header>
+      <img class="logo" src="./Avatars/bulldog.png" alt="Sasha logo" />
+      <div>The Goodest Girl</div>
+    </header>
+    <main>
+      <div class="row">
+        <div class="column">
+          <div>
+            <h2>Current Tasks</h2>
+          </div>
+          <div class="iframe-wrapper">
+            <iframe id="flex" src="./index.html" class="frame"></iframe>
+          </div>
+        </div>
+        <div class="column crm">
+          <div>
+            <h2>Customer</h2>
+          </div>
+          <div id="profile-container">
+            <div class="profile">
+              <img id="img" src="./Avatars/unknown.svg" />
+              <div class="header1">
+                <div class="header2"><span>Customer profile</span></div>
+              </div>
+              <div class="profile-details">
+                <div class="profile-name">
+                  <span id="name">No Customer Selected</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dialer">
+            <label for="phone-number">Phone number to dial</label>
+            <input id="phone-number" type="text" />
+            <input id="dial-number" type="button" value="Dial now" />
+          </div>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

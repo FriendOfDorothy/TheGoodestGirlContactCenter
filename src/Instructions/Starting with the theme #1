@@ -1,0 +1,12 @@
+Once we have the plugin created and ready to go,
+We want to create a themes file inside our src folder. you can name it Whatever you want. 
+
+the code is verbose, but let this serve as a cheat sheet. https://hslpicker.com/ is a pretty good HSL picker!
+
+Checkout the SashaTheme.js file to see the attributes we define.
+
+once we get the file created, we want to go to our plugin file and import theme from the theme file.
+
+then we want to run our configUpdate function on the manager parameter. Like so:
+
+manager.updateConfig({colorTheme: SashaTheme});
